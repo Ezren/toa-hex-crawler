@@ -361,12 +361,21 @@ function App() {
       sx={(theme) => ({
         display: 'grid',
         gridTemplateAreas: `
-        "navigation characters"
-        "actions    actions"
-      `,
+          "navigation characters"
+          "actions    actions"
+        `,
         gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: 'min-content 1fr min-content',
+        gridTemplateRows: '1fr min-content',
         gap: theme.spacing(2),
+        '@media (max-width: 1750px)': {
+          gridTemplateAreas: `
+            "characters"
+            "navigation"
+            "actions"
+          `,
+          gridTemplateColumns: '1fr',
+          gridTemplateRows: '1fr 1fr min-content',
+        }
       })}
     >
       <Card sx={{ gridArea: 'navigation' }}>
@@ -456,7 +465,7 @@ function App() {
           <Stack alignItems="flex-start" px={2} spacing={1}>
             <Typography variant="h5">Supplies</Typography>
             <Table>
-              <TableHead>
+              <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
                 <TableRow>
                   <TableCell>Rain Catchers</TableCell>
                   <TableCell>Gallons of Water</TableCell>
@@ -468,7 +477,7 @@ function App() {
               <TableBody sx={{ '.MuiTableCell-root': { fontSize: 16, fontWeight: '500', textAlign: 'center' } }}>
                 <TableRow>
                   <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                       <IconButton
                         onClick={() => setSupplies((prev) => ({ ...prev, rainCatchers: prev.rainCatchers - 1 }))}
                       >
@@ -483,7 +492,7 @@ function App() {
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                       <IconButton
                         onClick={() => setSupplies((prev) => ({ ...prev, gallonsWater: prev.gallonsWater - 1 }))}
                       >
@@ -498,7 +507,7 @@ function App() {
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
                       <IconButton onClick={() => setSupplies((prev) => ({ ...prev, poundsFood: prev.poundsFood - 1 }))}>
                         <Remove />
                       </IconButton>
@@ -528,7 +537,7 @@ function App() {
           <List>
             {characters.map((character) => (
               <ListItem key={character.name}>
-                <Stack>
+                <Stack sx={{ width: '100%' }}>
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="h5">{character.name}</Typography>
                     <IconButton onClick={() => characterDispatch({ type: 'DELETE_CHARACER', name: character.name })}>
@@ -536,7 +545,7 @@ function App() {
                     </IconButton>
                   </Stack>
                   <Table>
-                    <TableHead>
+                    <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
                       <TableRow>
                         <TableCell>Con Modifier</TableCell>
                         <TableCell>Wis Modifier</TableCell>
@@ -620,7 +629,7 @@ function App() {
                         </TableCell>
                         {character.dailyOption === 'navigate' ? (
                           <TableCell>
-                            <Stack direction="row" spacing={2} alignItems="center">
+                            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
                               <TextField
                                 select
                                 label="Pace"
@@ -632,10 +641,10 @@ function App() {
                                   !!navigator?.favoredTerrain && currentHexTerrain.startsWith(navigator.favoredTerrain),
                                 )}
                               >
-                                <MenuItem value={'camp'}>Stay at Camp</MenuItem>
-                                <MenuItem value={'normal'}>Normal</MenuItem>
-                                <MenuItem value={'slow'}>Slow</MenuItem>
-                                <MenuItem value={'fast'}>Fast</MenuItem>
+                                <MenuItem value="camp">Stay at Camp</MenuItem>
+                                <MenuItem value="normal">Normal</MenuItem>
+                                <MenuItem value="slow">Slow</MenuItem>
+                                <MenuItem value="fast">Fast</MenuItem>
                               </TextField>
                               <ToggleButtonGroup
                                 exclusive
