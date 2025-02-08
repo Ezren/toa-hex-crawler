@@ -45,6 +45,7 @@ type TravelDirection = 'north' | 'northeast' | 'southeast' | 'south' | 'southwes
 
 interface Supplies {
   rainCatchers: number;
+  canoes: number;
   poundsFood: number;
   gallonsWater: number;
 }
@@ -100,6 +101,7 @@ function App() {
       localStorage.getItem('supplies') ||
         JSON.stringify({
           rainCatchers: 0,
+          canoes: 0,
           poundsFood: 0,
           gallonsWater: 0,
         }),
@@ -121,7 +123,7 @@ function App() {
     return [...acc, favoredTerrain];
   }, []);
 
-  const supplyBurden = supplies.rainCatchers * 5 + supplies.poundsFood + supplies.gallonsWater * 8;
+  const supplyBurden = supplies.rainCatchers * 5 + supplies.canoes * 100 + supplies.poundsFood + supplies.gallonsWater * 8;
   const excessCapacity = characters.reduce((acc, currCharacter) => {
     const maxCapacity = currCharacter.strScore * 15;
     return acc + maxCapacity - currCharacter.currentBurden;
@@ -468,6 +470,7 @@ function App() {
               <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
                 <TableRow>
                   <TableCell>Rain Catchers</TableCell>
+                  <TableCell>Canoes</TableCell>
                   <TableCell>Gallons of Water</TableCell>
                   <TableCell>Pounds of Food</TableCell>
                   <TableCell>Supply Burden (lbs.)</TableCell>
@@ -486,6 +489,21 @@ function App() {
                       <Typography variant="h6">{supplies.rainCatchers}</Typography>
                       <IconButton
                         onClick={() => setSupplies((prev) => ({ ...prev, rainCatchers: prev.rainCatchers + 1 }))}
+                      >
+                        <Add />
+                      </IconButton>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
+                      <IconButton
+                        onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes - 1 }))}
+                      >
+                        <Remove />
+                      </IconButton>
+                      <Typography variant="h6">{supplies.canoes}</Typography>
+                      <IconButton
+                        onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes + 1 }))}
                       >
                         <Add />
                       </IconButton>
