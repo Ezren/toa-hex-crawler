@@ -37,7 +37,8 @@ export type CharacterReducerAction =
   | Feast
   | Dehydrate
   | StormTravel
-  | ChooseOption;
+  | ChooseOption
+  | SetBurden;
 
 type AddCharacter = {
   type: 'ADD_CHARACTER';
@@ -79,6 +80,12 @@ type ChooseOption = {
   type: 'CHOOSE_OPTION';
   name: string;
   option: CharacterOption;
+};
+
+type SetBurden = {
+  type: 'SET_BURDEN';
+  name: string;
+  burden: number;
 };
 
 export const characterReducer = (state: Character[], action: CharacterReducerAction) => {
@@ -172,6 +179,14 @@ export const characterReducer = (state: Character[], action: CharacterReducerAct
       return state.map((character) => {
         if (character.name === action.name) {
           return { ...character, dailyOption: action.option };
+        }
+
+        return character;
+      });
+    case 'SET_BURDEN':
+      return state.map((character) => {
+        if (character.name === action.name) {
+          return { ...character, currentBurden: action.burden };
         }
 
         return character;

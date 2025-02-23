@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   IconButton,
+  Input,
   List,
   ListItem,
   MenuItem,
@@ -123,7 +124,8 @@ function App() {
     return [...acc, favoredTerrain];
   }, []);
 
-  const supplyBurden = supplies.rainCatchers * 5 + supplies.canoes * 100 + supplies.poundsFood + supplies.gallonsWater * 8;
+  const supplyBurden =
+    supplies.rainCatchers * 5 + supplies.canoes * 100 + supplies.poundsFood + supplies.gallonsWater * 8;
   const excessCapacity = characters.reduce((acc, currCharacter) => {
     const maxCapacity = currCharacter.strScore * 15;
     return acc + maxCapacity - currCharacter.currentBurden;
@@ -377,7 +379,7 @@ function App() {
           `,
           gridTemplateColumns: '1fr',
           gridTemplateRows: '1fr 1fr min-content',
-        }
+        },
       })}
     >
       <Card sx={{ gridArea: 'navigation' }}>
@@ -496,15 +498,11 @@ function App() {
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" alignItems="center" justifyContent="center" spacing={1}>
-                      <IconButton
-                        onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes - 1 }))}
-                      >
+                      <IconButton onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes - 1 }))}>
                         <Remove />
                       </IconButton>
                       <Typography variant="h6">{supplies.canoes}</Typography>
-                      <IconButton
-                        onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes + 1 }))}
-                      >
+                      <IconButton onClick={() => setSupplies((prev) => ({ ...prev, canoes: prev.canoes + 1 }))}>
                         <Add />
                       </IconButton>
                     </Stack>
@@ -582,7 +580,20 @@ function App() {
                         <TableCell>{character.wisModifier}</TableCell>
                         <TableCell>{character.survivalModifier}</TableCell>
                         <TableCell>{character.strScore}</TableCell>
-                        <TableCell>{character.currentBurden}</TableCell>
+                        <TableCell>
+                          <Input
+                            sx={{ input: { fontWeight: '500', fontSize: '16px', textAlign: 'center' } }}
+                            value={character.currentBurden}
+                            type="number"
+                            onChange={(e) =>
+                              characterDispatch({
+                                type: 'SET_BURDEN',
+                                name: character.name,
+                                burden: e.target.value ? Number(e.target.value) : 0,
+                              })
+                            }
+                          />
+                        </TableCell>
                         <TableCell>
                           {character.isRanger ? <Check htmlColor="success" /> : <Close htmlColor="error" />}
                         </TableCell>
