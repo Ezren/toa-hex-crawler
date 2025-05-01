@@ -1,5 +1,4 @@
 import { useEffect, useReducer, useState } from 'react';
-import './App.css';
 import {
   Box,
   Button,
@@ -11,6 +10,7 @@ import {
   ListItem,
   MenuItem,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
@@ -21,14 +21,11 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { CharacterDialog } from './CharacterDialog';
-import { rollDice } from './utils';
-import { ChultTerrain, rollForEncounter } from './encounters';
+import { TabContext, TabList, TabPanel } from '@mui/lab';
+import { getRandomDirection, rollDice, getPaceEffect, paceModifier } from './utils';
+import { rollForEncounter } from './encounters';
 import {
   Add,
-  Check,
-  Close,
   Explore,
   North,
   NorthEast,
@@ -42,57 +39,21 @@ import {
 } from '@mui/icons-material';
 import { characterReducer, Character, FavoredTerrain } from './characters';
 
-type TravelDirection = 'north' | 'northeast' | 'southeast' | 'south' | 'southwest' | 'northwest';
-
-interface Supplies {
-  rainCatchers: number;
-  canoes: number;
-  poundsFood: number;
-  gallonsWater: number;
-}
-
-const getPaceEffect = (pace: string, favoredTerrain: boolean) => {
-  if (pace === 'camp') {
-    return '0 hexes; no encounters';
-  }
-  if (pace === 'normal') {
-    return '2 hexes/day by canoe; 1 hex/day by foot';
-  } else if (pace === 'fast') {
-    return '2-3 hexes/day by canoe; 1-2 hexes/day by foot; more likely to be surprised';
-  } else if (pace === 'slow' && favoredTerrain) {
-    return '2 hexes/day by canoe; 1 hex/day by foot; can hide from encounters';
-  } else {
-    return '1-2 hexes/day by canoe; 0-1 hex/day by foot; can hide from encounters';
-  }
-};
-
-const paceModifier = {
-  normal: 0,
-  slow: 5,
-  fast: -5,
-};
-
-const randomDirection: Record<number, TravelDirection> = {
-  1: 'north',
-  2: 'northeast',
-  3: 'southeast',
-  4: 'south',
-  5: 'southwest',
-  6: 'northwest',
-};
+import type { ChultTerrain, Pace, Supplies, TravelDirection } from './types';
+import { PartyStats } from './PartyStats';
 
 function App() {
+  const [currentTab, setCurrentTab] = useState("actions");
   const [day, setDay] = useState(parseInt(localStorage.getItem('day') || '0'));
   const [currentHex, setCurrentHex] = useState(parseInt(localStorage.getItem('currentHex') || '4120')); // Port Nyanzaru https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2Fg8v2pwzqlqy11.jpg
   const [currentHexTerrain, setCurrentHexTerrain] = useState<ChultTerrain>('forest');
-  const [pace, setPace] = useState('normal');
+  const [pace, setPace] = useState<Pace>('normal');
   const [direction, setDirection] = useState<TravelDirection>('south');
   const [weather, setWeather] = useState({ weather: '', effect: '' });
   const [characters, characterDispatch] = useReducer(
     characterReducer,
     JSON.parse(localStorage.getItem('characters') || '[]') as Character[],
   );
-  const [characterDialogOpen, setCharacterDialogOpen] = useState(false);
   const [navigationResult, setNaviationResult] = useState('');
   const [morningEncounter, setMorningEncounter] = useState('');
   const [afternoonEncounter, setAfternoonEncounter] = useState('');
@@ -249,7 +210,7 @@ function App() {
   const rollNavigation = () => {
     if (!currentHexTerrain || !direction) return;
     const dc = currentHexTerrain === 'coast' ? 10 : 15;
-    const roll = rollDice(20) + Number(navigator!.survivalModifier) + paceModifier[pace as keyof typeof paceModifier];
+    const roll = rollDice(20) + Number(navigator!.survivalModifier) + paceModifier[pace];
     const hexesTraveled = getHexesTraveled();
 
     if (pace === 'camp') {
@@ -260,7 +221,7 @@ function App() {
       );
       moveCurrentHex(direction, hexesTraveled);
     } else {
-      const actualDirection = randomDirection[rollDice(6) as keyof typeof randomDirection];
+      const actualDirection = getRandomDirection();
       setNaviationResult(
         `Navigation failed. Party travels ${hexesTraveled} ${hexesTraveled === 1 ? 'hex' : 'hexes'} ${actualDirection}${allFavoredTerrains.includes(currentHexTerrain as FavoredTerrain) ? '.' : ' and is LOST.'}`,
       );
@@ -338,7 +299,6 @@ function App() {
 
   useEffect(() => {
     getWeather();
-
     // These effects are only meant to be run once on render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -373,12 +333,13 @@ function App() {
         gap: theme.spacing(2),
         '@media (max-width: 1750px)': {
           gridTemplateAreas: `
-            "characters"
             "navigation"
+            "characters"
             "actions"
           `,
           gridTemplateColumns: '1fr',
           gridTemplateRows: '1fr 1fr min-content',
+          textAlign: 'center',
         },
       })}
     >
@@ -550,186 +511,152 @@ function App() {
               </TableBody>
             </Table>
           </Stack>
-          <List>
-            {characters.map((character) => (
-              <ListItem key={character.name}>
-                <Stack sx={{ width: '100%' }}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="h5">{character.name}</Typography>
-                    <IconButton onClick={() => characterDispatch({ type: 'DELETE_CHARACER', name: character.name })}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Stack>
-                  <Table>
-                    <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
-                      <TableRow>
-                        <TableCell>Con Modifier</TableCell>
-                        <TableCell>Wis Modifier</TableCell>
-                        <TableCell>Survival Modifier</TableCell>
-                        <TableCell>Str Score</TableCell>
-                        <TableCell>Current Burden (lbs.)</TableCell>
-                        <TableCell>Is Ranger?</TableCell>
-                        <TableCell>Is Wanderer?</TableCell>
-                        <TableCell>Wearing Armor?</TableCell>
-                        <TableCell>Favored Terrain</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody sx={{ '.MuiTableCell-root': { fontSize: 16, fontWeight: '500', textAlign: 'center' } }}>
-                      <TableRow>
-                        <TableCell>{character.conModifier}</TableCell>
-                        <TableCell>{character.wisModifier}</TableCell>
-                        <TableCell>{character.survivalModifier}</TableCell>
-                        <TableCell>{character.strScore}</TableCell>
-                        <TableCell>
-                          <Input
-                            sx={{ input: { fontWeight: '500', fontSize: '16px', textAlign: 'center' } }}
-                            value={character.currentBurden}
-                            type="number"
-                            onChange={(e) =>
-                              characterDispatch({
-                                type: 'SET_BURDEN',
-                                name: character.name,
-                                burden: e.target.value ? Number(e.target.value) : 0,
-                              })
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {character.isRanger ? <Check htmlColor="success" /> : <Close htmlColor="error" />}
-                        </TableCell>
-                        <TableCell>
-                          {character.isWanderer ? <Check htmlColor="success" /> : <Close htmlColor="error" />}
-                        </TableCell>
-                        <TableCell>
-                          {character.hasMediumOrHeavyArmor ? (
-                            <Check htmlColor="success" />
-                          ) : (
-                            <Close htmlColor="error" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {character.favoredTerrain
-                            ? String(character.favoredTerrain).charAt(0).toUpperCase() +
-                              String(character.favoredTerrain).slice(1)
-                            : ''}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                  <Table>
-                    <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
-                      <TableRow>
-                        <TableCell>Exhaustion</TableCell>
-                        <TableCell>Days Without Food</TableCell>
-                        <TableCell>Daily Action</TableCell>
-                        {character.dailyOption === 'navigate' ? <TableCell>Navigation</TableCell> : null}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody sx={{ '.MuiTableCell-root': { fontSize: 24, fontWeight: '500', textAlign: 'center' } }}>
-                      <TableRow>
-                        <TableCell>{character.levelsOfExhaustion ?? 0}</TableCell>
-                        <TableCell>{character.daysWithoutFood ?? 0}</TableCell>
-                        <TableCell>
-                          <ToggleButtonGroup
-                            exclusive
-                            value={character.dailyOption ?? 'lookout'}
-                            onChange={(_e, value) => {
-                              if (value === 'navigate') {
-                                if (navigator)
-                                  characterDispatch({ type: 'CHOOSE_OPTION', name: navigator.name, option: 'lookout' });
-                                setNavigator(character);
-                              }
-                              if (character.dailyOption === 'navigate' && value !== 'navigate') {
-                                setNavigator(null);
-                              }
-                              characterDispatch({ type: 'CHOOSE_OPTION', name: character.name, option: value });
-                            }}
-                          >
-                            <ToggleButton value="navigate">
-                              <Explore />
-                            </ToggleButton>
-                            <ToggleButton value="forage">
-                              <RestaurantMenu />
-                            </ToggleButton>
-                            <ToggleButton value="lookout">
-                              <Security />
-                            </ToggleButton>
-                          </ToggleButtonGroup>
-                        </TableCell>
-                        {character.dailyOption === 'navigate' ? (
+          <TabContext value={currentTab}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <TabList onChange={(_e, value) => setCurrentTab(value)} aria-label="party information">
+                <Tab label="Party Actions" value="actions" />
+                <Tab label="Party Stats" value="stats" />
+              </TabList>
+            </Box>
+            <TabPanel value="actions">
+              <List>
+                {characters.map((character) => (
+                  <ListItem key={character.name}>
+                    <Stack sx={{ width: '100%' }}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="h5">{character.name}</Typography>
+                      </Stack>
+                      <Table>
+                        <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
+                          <TableRow>
+                            <TableCell>Current Burden (lbs.)</TableCell>
+                            <TableCell>Daily Action</TableCell>
+                            {character.dailyOption === 'navigate' ? <TableCell>Navigation</TableCell> : null}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody
+                          sx={{ '.MuiTableCell-root': { fontSize: 24, fontWeight: '500', textAlign: 'center' } }}
+                        >
+                          <TableRow>
                           <TableCell>
-                            <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                              <TextField
-                                select
-                                label="Pace"
-                                value={pace}
-                                onChange={(e) => setPace(e.target.value)}
-                                sx={{ width: '50%' }}
-                                helperText={getPaceEffect(
-                                  pace,
-                                  !!navigator?.favoredTerrain && currentHexTerrain.startsWith(navigator.favoredTerrain),
-                                )}
-                              >
-                                <MenuItem value="camp">Stay at Camp</MenuItem>
-                                <MenuItem value="normal">Normal</MenuItem>
-                                <MenuItem value="slow">Slow</MenuItem>
-                                <MenuItem value="fast">Fast</MenuItem>
-                              </TextField>
+                              <Input
+                                sx={{ input: { fontWeight: '500', fontSize: '16px', textAlign: 'center' } }}
+                                value={character.currentBurden}
+                                type="number"
+                                onChange={(e) =>
+                                  characterDispatch({
+                                    type: 'SET_BURDEN',
+                                    name: character.name,
+                                    burden: e.target.value ? Number(e.target.value) : 0,
+                                  })
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
                               <ToggleButtonGroup
                                 exclusive
-                                value={direction}
-                                onChange={(_e, newDirection) => setDirection(newDirection)}
+                                value={character.dailyOption ?? 'lookout'}
+                                onChange={(_e, value) => {
+                                  if (value === 'navigate') {
+                                    if (navigator)
+                                      characterDispatch({
+                                        type: 'CHOOSE_OPTION',
+                                        name: navigator.name,
+                                        option: 'lookout',
+                                      });
+                                    setNavigator(character);
+                                  }
+                                  if (character.dailyOption === 'navigate' && value !== 'navigate') {
+                                    setNavigator(null);
+                                  }
+                                  characterDispatch({ type: 'CHOOSE_OPTION', name: character.name, option: value });
+                                }}
                               >
-                                <Stack>
-                                  <Stack direction="row">
-                                    <ToggleButton value="northwest">
-                                      <NorthWest />
-                                    </ToggleButton>
-                                    <ToggleButton value="north">
-                                      <North />
-                                    </ToggleButton>
-                                    <ToggleButton value="northeast">
-                                      <NorthEast />
-                                    </ToggleButton>
-                                  </Stack>
-                                  <Stack direction="row">
-                                    <ToggleButton value="southwest">
-                                      <SouthWest />
-                                    </ToggleButton>
-                                    <ToggleButton value="south">
-                                      <South />
-                                    </ToggleButton>
-                                    <ToggleButton value="southeast">
-                                      <SouthEast />
-                                    </ToggleButton>
-                                  </Stack>
-                                </Stack>
+                                <ToggleButton value="navigate">
+                                  <Explore />
+                                </ToggleButton>
+                                <ToggleButton value="forage">
+                                  <RestaurantMenu />
+                                </ToggleButton>
+                                <ToggleButton value="lookout">
+                                  <Security />
+                                </ToggleButton>
                               </ToggleButtonGroup>
-                            </Stack>
-                          </TableCell>
-                        ) : null}
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </Stack>
-              </ListItem>
-            ))}
-          </List>
-          <Button onClick={() => setCharacterDialogOpen(true)}>+ Add Character</Button>
+                            </TableCell>
+                            {character.dailyOption === 'navigate' ? (
+                              <TableCell>
+                                <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+                                  <TextField
+                                    select
+                                    label="Pace"
+                                    value={pace}
+                                    onChange={(e) => setPace(e.target.value as Pace)}
+                                    sx={{ width: '50%' }}
+                                    helperText={getPaceEffect(
+                                      pace,
+                                      !!navigator?.favoredTerrain &&
+                                        currentHexTerrain.startsWith(navigator.favoredTerrain),
+                                    )}
+                                  >
+                                    <MenuItem value="camp">Stay at Camp</MenuItem>
+                                    <MenuItem value="normal">Normal</MenuItem>
+                                    <MenuItem value="slow">Slow</MenuItem>
+                                    <MenuItem value="fast">Fast</MenuItem>
+                                  </TextField>
+                                  <ToggleButtonGroup
+                                    exclusive
+                                    value={direction}
+                                    onChange={(_e, newDirection) => setDirection(newDirection)}
+                                  >
+                                    <Stack>
+                                      <Stack direction="row">
+                                        <ToggleButton value="northwest">
+                                          <NorthWest />
+                                        </ToggleButton>
+                                        <ToggleButton value="north">
+                                          <North />
+                                        </ToggleButton>
+                                        <ToggleButton value="northeast">
+                                          <NorthEast />
+                                        </ToggleButton>
+                                      </Stack>
+                                      <Stack direction="row">
+                                        <ToggleButton value="southwest">
+                                          <SouthWest />
+                                        </ToggleButton>
+                                        <ToggleButton value="south">
+                                          <South />
+                                        </ToggleButton>
+                                        <ToggleButton value="southeast">
+                                          <SouthEast />
+                                        </ToggleButton>
+                                      </Stack>
+                                    </Stack>
+                                  </ToggleButtonGroup>
+                                </Stack>
+                              </TableCell>
+                            ) : null}
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </Stack>
+                  </ListItem>
+                ))}
+              </List>
+            </TabPanel>
+            <TabPanel value="stats">
+              <PartyStats characters={characters} characterDispatch={characterDispatch} />
+            </TabPanel>
+          </TabContext>
         </CardContent>
       </Card>
-      <CharacterDialog
-        open={characterDialogOpen}
-        handleClose={() => setCharacterDialogOpen(false)}
-        addCharacter={(character: Character) => characterDispatch({ type: 'ADD_CHARACTER', character })}
-      />
       <Card
         component={Stack}
         direction="row"
         sx={{ gridArea: 'actions', justifySelf: 'center', width: '600px', height: '100px' }}
       >
         <Button
-          disabled={!(currentHexTerrain && navigator && direction) || !!morningEncounter}
+          disabled={!(currentHexTerrain && navigator && direction) || !!navigationResult}
           onClick={rollNavigation}
           variant="contained"
           size="large"
@@ -739,7 +666,7 @@ function App() {
         </Button>
         <Button
           onClick={newDay}
-          disabled={!morningEncounter || supplyBurden > excessCapacity}
+          disabled={!navigationResult || supplyBurden > excessCapacity}
           variant="contained"
           size="large"
           fullWidth

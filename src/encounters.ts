@@ -1,15 +1,6 @@
 import { rollDice } from './utils';
 
-export type ChultTerrain =
-  | 'coast'
-  | 'desert'
-  | 'forest'
-  | 'forestLesser'
-  | 'forestGreater'
-  | 'mountain'
-  | 'river'
-  | 'ruins'
-  | 'swamp';
+import type { ChultTerrain } from './types';
 
 export const rollForEncounter = (terrain: ChultTerrain): string => {
   const encounterRoll = rollDice(20);
