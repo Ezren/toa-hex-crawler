@@ -41,9 +41,10 @@ import { characterReducer, Character, FavoredTerrain } from './characters';
 
 import type { ChultTerrain, Pace, Supplies, TravelDirection } from './types';
 import { PartyStats } from './PartyStats';
+import { PartyAction } from './PartyActions';
 
 function App() {
-  const [currentTab, setCurrentTab] = useState("actions");
+  const [currentTab, setCurrentTab] = useState('actions');
   const [day, setDay] = useState(parseInt(localStorage.getItem('day') || '0'));
   const [currentHex, setCurrentHex] = useState(parseInt(localStorage.getItem('currentHex') || '4120')); // Port Nyanzaru https://www.reddit.com/media?url=https%3A%2F%2Fi.redd.it%2Fg8v2pwzqlqy11.jpg
   const [currentHexTerrain, setCurrentHexTerrain] = useState<ChultTerrain>('forest');
@@ -323,6 +324,7 @@ function App() {
     <Box
       component="main"
       sx={(theme) => ({
+        textAlign: 'center',
         display: 'grid',
         gridTemplateAreas: `
           "navigation characters"
@@ -339,7 +341,6 @@ function App() {
           `,
           gridTemplateColumns: '1fr',
           gridTemplateRows: '1fr 1fr min-content',
-          textAlign: 'center',
         },
       })}
     >
@@ -519,130 +520,17 @@ function App() {
               </TabList>
             </Box>
             <TabPanel value="actions">
-              <List>
-                {characters.map((character) => (
-                  <ListItem key={character.name}>
-                    <Stack sx={{ width: '100%' }}>
-                      <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="h5">{character.name}</Typography>
-                      </Stack>
-                      <Table>
-                        <TableHead sx={{ '.MuiTableCell-root': { textAlign: 'center' } }}>
-                          <TableRow>
-                            <TableCell>Current Burden (lbs.)</TableCell>
-                            <TableCell>Daily Action</TableCell>
-                            {character.dailyOption === 'navigate' ? <TableCell>Navigation</TableCell> : null}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody
-                          sx={{ '.MuiTableCell-root': { fontSize: 24, fontWeight: '500', textAlign: 'center' } }}
-                        >
-                          <TableRow>
-                          <TableCell>
-                              <Input
-                                sx={{ input: { fontWeight: '500', fontSize: '16px', textAlign: 'center' } }}
-                                value={character.currentBurden}
-                                type="number"
-                                onChange={(e) =>
-                                  characterDispatch({
-                                    type: 'SET_BURDEN',
-                                    name: character.name,
-                                    burden: e.target.value ? Number(e.target.value) : 0,
-                                  })
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <ToggleButtonGroup
-                                exclusive
-                                value={character.dailyOption ?? 'lookout'}
-                                onChange={(_e, value) => {
-                                  if (value === 'navigate') {
-                                    if (navigator)
-                                      characterDispatch({
-                                        type: 'CHOOSE_OPTION',
-                                        name: navigator.name,
-                                        option: 'lookout',
-                                      });
-                                    setNavigator(character);
-                                  }
-                                  if (character.dailyOption === 'navigate' && value !== 'navigate') {
-                                    setNavigator(null);
-                                  }
-                                  characterDispatch({ type: 'CHOOSE_OPTION', name: character.name, option: value });
-                                }}
-                              >
-                                <ToggleButton value="navigate">
-                                  <Explore />
-                                </ToggleButton>
-                                <ToggleButton value="forage">
-                                  <RestaurantMenu />
-                                </ToggleButton>
-                                <ToggleButton value="lookout">
-                                  <Security />
-                                </ToggleButton>
-                              </ToggleButtonGroup>
-                            </TableCell>
-                            {character.dailyOption === 'navigate' ? (
-                              <TableCell>
-                                <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                                  <TextField
-                                    select
-                                    label="Pace"
-                                    value={pace}
-                                    onChange={(e) => setPace(e.target.value as Pace)}
-                                    sx={{ width: '50%' }}
-                                    helperText={getPaceEffect(
-                                      pace,
-                                      !!navigator?.favoredTerrain &&
-                                        currentHexTerrain.startsWith(navigator.favoredTerrain),
-                                    )}
-                                  >
-                                    <MenuItem value="camp">Stay at Camp</MenuItem>
-                                    <MenuItem value="normal">Normal</MenuItem>
-                                    <MenuItem value="slow">Slow</MenuItem>
-                                    <MenuItem value="fast">Fast</MenuItem>
-                                  </TextField>
-                                  <ToggleButtonGroup
-                                    exclusive
-                                    value={direction}
-                                    onChange={(_e, newDirection) => setDirection(newDirection)}
-                                  >
-                                    <Stack>
-                                      <Stack direction="row">
-                                        <ToggleButton value="northwest">
-                                          <NorthWest />
-                                        </ToggleButton>
-                                        <ToggleButton value="north">
-                                          <North />
-                                        </ToggleButton>
-                                        <ToggleButton value="northeast">
-                                          <NorthEast />
-                                        </ToggleButton>
-                                      </Stack>
-                                      <Stack direction="row">
-                                        <ToggleButton value="southwest">
-                                          <SouthWest />
-                                        </ToggleButton>
-                                        <ToggleButton value="south">
-                                          <South />
-                                        </ToggleButton>
-                                        <ToggleButton value="southeast">
-                                          <SouthEast />
-                                        </ToggleButton>
-                                      </Stack>
-                                    </Stack>
-                                  </ToggleButtonGroup>
-                                </Stack>
-                              </TableCell>
-                            ) : null}
-                          </TableRow>
-                        </TableBody>
-                      </Table>
-                    </Stack>
-                  </ListItem>
-                ))}
-              </List>
+              <PartyAction
+                characters={characters}
+                characterDispatch={characterDispatch}
+                navigator={navigator}
+                setNavigator={setNavigator}
+                pace={pace}
+                setPace={setPace}
+                direction={direction}
+                setDirection={setDirection}
+                currentHexTerrain={currentHexTerrain}
+              />
             </TabPanel>
             <TabPanel value="stats">
               <PartyStats characters={characters} characterDispatch={characterDispatch} />
